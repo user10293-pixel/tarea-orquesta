@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:3000"
+    environment:
+      - USER_MS_URL=http://user-ms:3000
+      - ACADEMIC_MS_URL=http://academic-ms:3000
+      - COMMUNICATION_MS_URL=http://communication-ms:3000
+    networks:
+      - school-network
+    depends_on:
+      - user-ms
+      - academic-ms
+      - communication-ms
+
+  user-ms:
+    build: ./user-ms
+    environment:
+      - DATABASE_URL=postgresql://user:password@user_db:5432/userdb
+    networks:
+      - school-network
+    depends_on:
+      - user_db
+
+  academic-ms:
+    build: ./academic-ms
+    environment:
+      - DATABASE_URL=mysql://user:password@academic_db:3306/academicdb
+    networks:
+      - school-network
+    depends_on:
+      - academic_db
+
+
+  communication-ms:
+    build: ./communication-ms
+    environment:
+      - DATABASE_URL=mongodb://user:password@comm_db:27017/commdb
+    networks:
+      - school-network
+    depends_on:
+      - comm_db
+
+  user_db:
+    image: postgres:14-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: userdb
+    ports:
+      - "1000:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - school-network
+
+  academic_db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: academicdb
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "1001:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - school-network
+
+  comm_db:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: commdb
+    ports:
+      - "1002:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - school-network
+
+networks:
+  school-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mysql_data:
+  mongo_data:
